@@ -1,14 +1,14 @@
-# Quartz
+# com.cg.quartz
 
 ## Objetivo
 
 Proporcionar un `auto-configurador` de Spring para poder incluir en un artefacto
-**procesos autom·ticos programados** gestionados por quartz.
+**procesos autom√°ticos programados** gestionados por quartz.
 
-## CÛmo funciona?
+## C√≥mo funciona?
 
-Se debe incluir la siguiente configuraciÛn en el mÛdulo en el que se quieran incluir procesos
-autom·ticos.
+Se debe incluir la siguiente configuraci√≥n en el m√≥dulo en el que se quieran incluir procesos
+autom√°ticos.
 
 ```yaml
 # Quartz properties
@@ -40,11 +40,15 @@ org:
         provider: hikaricp
 ```
 
-Es importante revisar los valores, ya que los incluidos aquÌ (datasource, etc) son de ejemplo. En principio, el datasource ser· el mismo que el que utilice el microservicio en el que se quieren incorporar procesos, pero se establecen variables de entorno diferentes por si en alg˙n momento esto no es asÌ (QRTZ_SPRING_DATASOURCE_USERNAME, QRTZ_SPRING_DATASOURCE_PASSWORD...).
+Es importante revisar los valores, ya que los incluidos aqu√≠ (datasource, etc) son de ejemplo. En principio, el
+datasource ser√° el mismo que el que utilice el microservicio en el que se quieren incorporar procesos, pero se
+establecen variables de entorno diferentes por si en alg√∫n momento esto no es as√≠ (QRTZ_SPRING_DATASOURCE_USERNAME,
+QRTZ_SPRING_DATASOURCE_PASSWORD...).
 
-Hay que establecer un nombre de instancia concreto para cada servicio (quartz.scheduler.instanceName). En ning˙n caso debe dejarse el que viene de ejemplo.
+Hay que establecer un nombre de instancia concreto para cada servicio (quartz.scheduler.instanceName). En ning√∫n caso
+debe dejarse el que viene de ejemplo.
 
-El starter debe activarse con la siguiente propiedad de configuraciÛn:
+El starter debe activarse con la siguiente propiedad de configuraci√≥n:
 
 ```yaml
 ---
@@ -54,9 +58,11 @@ com:
       enabled: true
 ```
 
-En los ficheros yml de tests, no incluir la propiedad o incluirla con el valor false, ya que no se requiere inicializar quartz con toda la configuraciÛn cuando se cargue el contexto en los tests de integraciÛn.
+En los ficheros yml de tests, no incluir la propiedad o incluirla con el valor false, ya que no se requiere inicializar
+quartz con toda la configuraci√≥n cuando se cargue el contexto en los tests de integraci√≥n.
 
-Adem·s de esta configuraciÛn, en el schema de base de datos habr· que ejecutar el script con todas las tablas de quartz (empiezan por QRTZ_). Importante establecer el esquema correcto en los Ìndices:
+Adem√°s de esta configuraci√≥n, en el schema de base de datos habr√° que ejecutar el script con todas las tablas de
+quartz (empiezan por QRTZ_). Importante establecer el esquema correcto en los √≠ndices:
 
 ```sql
 CREATE TABLE QRTZ_JOB_DETAILS (
@@ -213,59 +219,64 @@ CREATE INDEX IDX_QRTZ_BLOB_TRIGGERS_T_G ON QRTZ_BLOB_TRIGGERS(SCHED_NAME, TRIGGE
 CREATE INDEX IDX_QRTZ_LCK_SCHED_NAME ON QRTZ_LOCKS(SCHED_NAME) TABLESPACE TS_HOR_USU_DAT;
 ```
 
-Estas tablas ser·n las encargadas de almacenar los schedulers, los triggers (de los diferentes tipos), los jobs, sus siguientes ejecuciones, su programaciÛn, etc.
+Estas tablas ser√°n las encargadas de almacenar los schedulers, los triggers (de los diferentes tipos), los jobs, sus
+siguientes ejecuciones, su programaci√≥n, etc.
 
-Una vez incluÌda la configuraciÛn, para tener un proceso autom·tico es necesario definir 3 elementos:
+Una vez inclu√≠da la configuraci√≥n, para tener un proceso autom√°tico es necesario definir 3 elementos:
 
-- **Job**: la implementaciÛn del job como tal.
-- **JobDefinition**: la definiciÛn del job, con el nombre y la descripciÛn. Hace referencia al job. Debe implementar la interfaz QuartzJobDefinition.
-- **TriggerDefinition**: la definiciÛn del trigger, con la definiciÛn del job al que hace referencia. Debe implementar la interfaz QuartzTriggerDefinition.
+- **Job**: la implementaci√≥n del job como tal.
+- **JobDefinition**: la definici√≥n del job, con el nombre y la descripci√≥n. Hace referencia al job. Debe implementar la
+  interfaz QuartzJobDefinition.
+- **TriggerDefinition**: la definici√≥n del trigger, con la definici√≥n del job al que hace referencia. Debe implementar
+  la interfaz QuartzTriggerDefinition.
 
-## Ejemplo de implementaciÛn
+## Ejemplo de implementaci√≥n
 
 ### Ejemplo de Job:
 
 ```java
+
 @Component
 @DisallowConcurrentExecution
 @Slf4j
 public class TestJob implements Job {
 
-  @Autowired
-  ApplicationContext applicationContext;
-  
-  @Override
-  public void execute(JobExecutionContext context) throws JobExecutionException {
-    log.info("JOB RUNNING!!!!");
-    LoginUsuarioServiceImpl testService = applicationContext.getBean(LoginUsuarioServiceImpl.class);
-    try {
-      final TokenJWTDTO tokenJWTByUserRef = testService.getTokenJWTByUserRef("tramitador1");
-      log.info("Token: " + tokenJWTByUserRef);
-    } catch (UserNotFoundException e) {
-      e.printStackTrace();
+    @Autowired
+    ApplicationContext applicationContext;
+
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        log.info("JOB RUNNING!!!!");
+        LoginUsuarioServiceImpl testService = applicationContext.getBean(LoginUsuarioServiceImpl.class);
+        try {
+            final TokenJWTDTO tokenJWTByUserRef = testService.getTokenJWTByUserRef("tramitador1");
+            log.info("Token: " + tokenJWTByUserRef);
+        } catch (UserNotFoundException e) {
+            e.printStackTrace();
+        }
     }
-  }
 
 }
 ```
 
-En este ejemplo se incluye el contexto de Spring, la obtenciÛn de un bean (como se harÌa con un scheduler, por ejemplo)
-y la utilizaciÛn del mismo de forma correcta.
+En este ejemplo se incluye el contexto de Spring, la obtenci√≥n de un bean (como se har√≠a con un scheduler, por ejemplo)
+y la utilizaci√≥n del mismo de forma correcta.
 
 ### Ejemplo de JobDefinition:
 
 ```java
+
 @Component
 public class TestJobDefinition implements QuartzJobDefinition {
 
-  @Override
-  public JobDetail getJobDetail() {
-    return JobBuilder.newJob(TestJob.class)
-        .withIdentity("Qrtz_TestJob")
-        .withDescription("Job de pruebas para starter")
-        .storeDurably()
-        .build();
-  }
+    @Override
+    public JobDetail getJobDetail() {
+        return JobBuilder.newJob(TestJob.class)
+                .withIdentity("Qrtz_TestJob")
+                .withDescription("Job de pruebas para starter")
+                .storeDurably()
+                .build();
+    }
 
 }
 ```
@@ -273,17 +284,18 @@ public class TestJobDefinition implements QuartzJobDefinition {
 ### Ejemplo de TriggerDefinition para CronScheduler:
 
 ```java
+
 @Component
 public class TestTriggerDefinition implements QuartzTriggerDefinition {
 
-  @Value("${testjob.cron}")
-  private String cronExpression;
-  
-  @Override
-  public Trigger getTrigger() {
-    return TriggerBuilder.newTrigger().forJob("Qrtz_TestJob").withIdentity("Qrtz_TestJob_Trigger")
-        .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).build();
-  }
+    @Value("${testjob.cron}")
+    private String cronExpression;
+
+    @Override
+    public Trigger getTrigger() {
+        return TriggerBuilder.newTrigger().forJob("Qrtz_TestJob").withIdentity("Qrtz_TestJob_Trigger")
+                .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).build();
+    }
 
 }
 ```
@@ -294,22 +306,23 @@ Para ejecutar cada cinco minutos (0 - 5 - 10 - 15...): 0 0/5 * * * ?
 ### Ejemplo de TriggerDefinition para SimpleScheduler (no recomendado):
 
 ```java
+
 @Component
 public class TestTriggerDefinition implements QuartzTriggerDefinition {
 
-  @Override
-  public Trigger getTrigger() {
+    @Override
+    public Trigger getTrigger() {
 
-    SimpleScheduleBuilder scheduleBuilder =
-        SimpleScheduleBuilder.simpleSchedule().withIntervalInMinutes(1).repeatForever();
+        SimpleScheduleBuilder scheduleBuilder =
+                SimpleScheduleBuilder.simpleSchedule().withIntervalInMinutes(1).repeatForever();
 
-    return TriggerBuilder.newTrigger().forJob("Qrtz_TestJob").withIdentity("Qrtz_TestJob_Trigger")
-        .withSchedule(scheduleBuilder).build();
-  }
+        return TriggerBuilder.newTrigger().forJob("Qrtz_TestJob").withIdentity("Qrtz_TestJob_Trigger")
+                .withSchedule(scheduleBuilder).build();
+    }
 
 }
 ```
 
 En este ejemplo, se ejecuta directamente cada minuto y se repite para siempre. Se recomienda
-utilizar mayormente el cron, ya que se tiene un control m·s preciso de exactamente cu·ndo se va
+utilizar mayormente el cron, ya que se tiene un control m√°s preciso de exactamente cu√°ndo se va
 a ejecutar el proceso.
