@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: es.cimacg.quartz
+server:
+  port: 28080
+---
+es:
+  cimacg:
+    quartz:
+      enabled: true
+      cronExpression: 0 0/5 * * * ?
+---
+org:
+  quartz:
+    scheduler:
+      instanceName: es.cimacg.quartz
+      instanceId: AUTO
+      instanceIdGenerator: org.quartz.simpl.SimpleInstanceIdGenerator
+    threadPool:
+      threadCount: 10
+      threadPriority: 5
+      class: org.quartz.simpl.SimpleThreadPool
+    jobStore:
+      misfireThreshold: 60000
+      class: org.quartz.impl.jdbcjobstore.JobStoreTX
+      useProperties: false
+      dataSource: quartzds
+      tablePrefix: QRTZ_
+      isClustered: true
+      clusterCheckinInterval: 20000
+      driverDelegateClass: org.quartz.impl.jdbcjobstore.oracle.OracleDelegate
+    dataSource:
+      quartzds:
+        user: ${QRTZ_SPRING_DATASOURCE_USERNAME:QUARTZ}
+        password: ${QRTZ_SPRING_DATASOURCE_PASSWORD:QUARTZ}
+        URL: ${QRTZ_SPRING_DATASOURCE_URL:jdbc:oracle:thin:@192.168.56.1:11521/ORCL}
+        driver: ${QRTZ_SPRING_DATASOURCE_DRIVER:oracle.jdbc.OracleDriver}
+        provider: OracleODP
