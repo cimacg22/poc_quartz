@@ -1,7 +1,8 @@
 spring:
   application:
     name: es.indra.quartz
-    port: 28080
+server:
+  port: 28080
 ---
 es:
   indra:

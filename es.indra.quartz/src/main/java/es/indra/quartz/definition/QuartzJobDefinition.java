@@ -5,13 +5,23 @@ import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.springframework.stereotype.Component;
 
+/**
+ * Definición del trabajo Quartz.
+ */
 @Component
 public class QuartzJobDefinition  implements IQuartzJobDefinition{
 
+    protected static final String QRTZ_QUARTZ_JOB = "Qrtz_QuartzJob";
+
+    /**
+     * Obtiene el trabajo.
+     *
+     * @return Trabajo.
+     */
     @Override
     public JobDetail getJobDetail() {
         return JobBuilder.newJob(QuartzJob.class)
-                .withIdentity("Qrtz_QuartzJob")
+                .withIdentity(QRTZ_QUARTZ_JOB)
                 .withDescription("Job de pruebas para starter")
                 .storeDurably()
                 .build();
