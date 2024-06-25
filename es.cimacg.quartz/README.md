@@ -1,4 +1,4 @@
-# es.indra.Quartz
+# es.cimacg.Quartz
 
 ## Objetivo
 
@@ -97,7 +97,7 @@ El starter debe activarse con la siguiente propiedad de configuración:
 ```yaml
 ---
 es:
-  indra:
+  cimacg:
     quartz:
       enabled: true
       cronExpression: 0 0/5 * * * ?
@@ -352,7 +352,7 @@ public class QuartzTriggerDefinition implements IQuartzTriggerDefinition {
     /**
      * Expresión cron.
      */
-    @Value("${es.indra.quartz.cronExpression}")
+    @Value("${es.cimacg.quartz.cronExpression}")
     private String cronExpression;
 
     /**
