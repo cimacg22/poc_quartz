@@ -1,0 +1,12 @@
+services:
+  gsshorexp:
+    container_name: quartz-cimacg
+    image: quartz-cimacg:1.0.0
+    hostname: quartz-cimacg
+    ports:
+      - "28080:28080"
+    environment:
+      - DUMMY=dummy
+      #- JAVA_TOOL_OPTIONS="-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
+    extra_hosts:
+      - oracle-db:192.168.56.1
