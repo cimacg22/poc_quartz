@@ -9,8 +9,11 @@ import org.springframework.stereotype.Component;
  * Definición del trabajo Quartz.
  */
 @Component
-public class QuartzJobDefinition  implements IQuartzJobDefinition{
+public class QuartzJobDefinition implements IQuartzJobDefinition {
 
+    /**
+     * Nombre del trabajo.
+     */
     protected static final String QRTZ_QUARTZ_JOB = "Qrtz_QuartzJob";
 
     /**

@@ -5,6 +5,50 @@
 Proporcionar un `auto-configurador` de Spring para poder incluir en un artefacto
 **procesos automáticos programados** gestionados por quartz.
 
+## Dependencias
+
+- Java 17
+- Spring Boot 3.3.1
+- spring-boot-starter-quartz
+- spring-boot-configuration-processor
+- lombok
+- c3p0
+- ojdbc11
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-quartz</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-configuration-processor</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.mchange</groupId>
+        <artifactId>c3p0</artifactId>
+        <version>0.10.1</version>
+    </dependency>
+    <dependency>
+        <groupId>com.oracle.database.jdbc</groupId>
+        <artifactId>ojdbc11</artifactId>
+        <version>23.4.0.24.05</version>
+    </dependency>
+</dependencies>
+```
+
 ## Cómo funciona?
 
 Se debe incluir la siguiente configuración en el módulo en el que se quieran incluir procesos
@@ -37,26 +81,33 @@ org:
         password: ${QRTZ_SPRING_DATASOURCE_PASSWORD:BD_USUARIOS}
         URL: ${QRTZ_SPRING_DATASOURCE_URL:jdbc:oracle:thin:@localhost:1521/XEPDB1}
         driver: ${QRTZ_SPRING_DATASOURCE_DRIVER:oracle.jdbc.OracleDriver}
-        provider: hikaricp
+        provider: OracleODP
 ```
 
-Es importante revisar los valores, ya que los incluidos aquí (datasource, etc) son de ejemplo. En principio, el datasource será el mismo que el que utilice el microservicio en el que se quieren incorporar procesos, pero se establecen variables de entorno diferentes por si en algún momento esto no es así (QRTZ_SPRING_DATASOURCE_USERNAME, QRTZ_SPRING_DATASOURCE_PASSWORD...).
+Es importante revisar los valores, ya que los incluidos aquí (datasource, etc) son de ejemplo. En principio, el
+datasource será el mismo que el que utilice el microservicio en el que se quieren incorporar procesos, pero se
+establecen variables de entorno diferentes por si en algún momento esto no es así (QRTZ_SPRING_DATASOURCE_USERNAME,
+QRTZ_SPRING_DATASOURCE_PASSWORD...).
 
-Hay que establecer un nombre de instancia concreto para cada servicio (quartz.scheduler.instanceName). En ningún caso debe dejarse el que viene de ejemplo.
+Hay que establecer un nombre de instancia concreto para cada servicio (quartz.scheduler.instanceName). En ningún caso
+debe dejarse el que viene de ejemplo.
 
 El starter debe activarse con la siguiente propiedad de configuración:
 
 ```yaml
 ---
-com:
-  cg:
+es:
+  indra:
     quartz:
       enabled: true
+      cronExpression: 0 0/5 * * * ?
 ```
 
-En los ficheros yml de tests, no incluir la propiedad o incluirla con el valor false, ya que no se requiere inicializar quartz con toda la configuración cuando se cargue el contexto en los tests de integración.
+En los ficheros yml de tests, no incluir la propiedad o incluirla con el valor false, ya que no se requiere inicializar
+quartz con toda la configuración cuando se cargue el contexto en los tests de integración.
 
-Además de esta configuración, en el schema de base de datos habrá que ejecutar el script con todas las tablas de quartz (empiezan por QRTZ_). Importante establecer el esquema correcto en los índices:
+Además de esta configuración, en el schema de base de datos habrá que ejecutar el script con todas las tablas de
+quartz (empiezan por QRTZ_). Importante establecer el esquema correcto en los índices:
 
 ```sql
 CREATE TABLE QRTZ_JOB_DETAILS (
@@ -213,39 +264,42 @@ CREATE INDEX IDX_QRTZ_BLOB_TRIGGERS_T_G ON QRTZ_BLOB_TRIGGERS(SCHED_NAME, TRIGGE
 CREATE INDEX IDX_QRTZ_LCK_SCHED_NAME ON QRTZ_LOCKS(SCHED_NAME) TABLESPACE TS_HOR_USU_DAT;
 ```
 
-Estas tablas serán las encargadas de almacenar los schedulers, los triggers (de los diferentes tipos), los jobs, sus siguientes ejecuciones, su programación, etc.
+Estas tablas serán las encargadas de almacenar los schedulers, los triggers (de los diferentes tipos), los jobs, sus
+siguientes ejecuciones, su programación, etc.
 
 Una vez incluída la configuración, para tener un proceso automático es necesario definir 3 elementos:
 
 - **Job**: la implementación del job como tal.
-- **JobDefinition**: la definición del job, con el nombre y la descripción. Hace referencia al job. Debe implementar la interfaz QuartzJobDefinition.
-- **TriggerDefinition**: la definición del trigger, con la definición del job al que hace referencia. Debe implementar la interfaz QuartzTriggerDefinition.
+- **JobDefinition**: la definición del job, con el nombre y la descripción. Hace referencia al job. Debe implementar la
+  interfaz QuartzJobDefinition.
+- **TriggerDefinition**: la definición del trigger, con la definición del job al que hace referencia. Debe implementar
+  la interfaz QuartzTriggerDefinition.
 
 ## Ejemplo de implementación
 
 ### Ejemplo de Job:
 
 ```java
+import org.quartz.JobExecutionException;
+
 @Component
 @DisallowConcurrentExecution
 @Slf4j
-public class TestJob implements Job {
+/**
+ * Clase que define el trabajo a realizar por Quartz.
+ */
+public class QuartzJob implements Job {
 
-  @Autowired
-  ApplicationContext applicationContext;
-  
-  @Override
-  public void execute(JobExecutionContext context) throws JobExecutionException {
-    log.info("JOB RUNNING!!!!");
-    LoginUsuarioServiceImpl testService = applicationContext.getBean(LoginUsuarioServiceImpl.class);
-    try {
-      final TokenJWTDTO tokenJWTByUserRef = testService.getTokenJWTByUserRef("tramitador1");
-      log.info("Token: " + tokenJWTByUserRef);
-    } catch (UserNotFoundException e) {
-      e.printStackTrace();
+    /**
+     * Método que se ejecuta cuando se lanza el trabajo.
+     *
+     * @param context Contexto del trabajo.
+     * @throws JobExecutionException Excepción lanzada si se produce un error en la ejecución del trabajo.
+     */
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        log.info("JOB RUNNING!!!!");
     }
-  }
-
 }
 ```
 
@@ -255,36 +309,62 @@ y la utilización del mismo de forma correcta.
 ### Ejemplo de JobDefinition:
 
 ```java
+
+/**
+ * Definición del trabajo Quartz.
+ */
 @Component
-public class TestJobDefinition implements QuartzJobDefinition {
+public class QuartzJobDefinition implements IQuartzJobDefinition {
+    /**
+     * Nombre del trabajo.
+     */
+    protected static final String QRTZ_QUARTZ_JOB = "Qrtz_QuartzJob";
 
-  @Override
-  public JobDetail getJobDetail() {
-    return JobBuilder.newJob(TestJob.class)
-        .withIdentity("Qrtz_TestJob")
-        .withDescription("Job de pruebas para starter")
-        .storeDurably()
-        .build();
-  }
-
+    /**
+     * Obtiene el trabajo.
+     *
+     * @return Trabajo.
+     */
+    @Override
+    public JobDetail getJobDetail() {
+        return JobBuilder.newJob(QuartzJob.class)
+                .withIdentity(QRTZ_QUARTZ_JOB)
+                .withDescription("Job de pruebas para starter")
+                .storeDurably()
+                .build();
+    }
 }
 ```
 
 ### Ejemplo de TriggerDefinition para CronScheduler:
 
 ```java
+
+/**
+ * Definición del desencadenador Quartz.
+ */
 @Component
-public class TestTriggerDefinition implements QuartzTriggerDefinition {
+public class QuartzTriggerDefinition implements IQuartzTriggerDefinition {
 
-  @Value("${testjob.cron}")
-  private String cronExpression;
-  
-  @Override
-  public Trigger getTrigger() {
-    return TriggerBuilder.newTrigger().forJob("Qrtz_TestJob").withIdentity("Qrtz_TestJob_Trigger")
-        .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).build();
-  }
 
+    // Identificador del desencadenador.
+    private static final String QRTZ_QUARTZ_JOB_TRIGGER = QuartzJobDefinition.QRTZ_QUARTZ_JOB + "_Trigger";
+    /**
+     * Expresión cron.
+     */
+    @Value("${es.indra.quartz.cronExpression}")
+    private String cronExpression;
+
+    /**
+     * Obtiene el desencadenador.
+     *
+     * @return Desencadenador.
+     */
+    @Override
+    public Trigger getTrigger() {
+        return TriggerBuilder.newTrigger().forJob(QuartzJobDefinition.QRTZ_QUARTZ_JOB).withIdentity(QRTZ_QUARTZ_JOB_TRIGGER)
+                .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).build();
+    }
 }
 ```
 
@@ -294,19 +374,29 @@ Para ejecutar cada cinco minutos (0 - 5 - 10 - 15...): 0 0/5 * * * ?
 ### Ejemplo de TriggerDefinition para SimpleScheduler (no recomendado):
 
 ```java
+
+/**
+ * Definición del desencadenador Quartz.
+ */
 @Component
-public class TestTriggerDefinition implements QuartzTriggerDefinition {
+public class QuartzTriggerDefinition implements IQuartzTriggerDefinition {
 
-  @Override
-  public Trigger getTrigger() {
+    // Identificador del desencadenador.
+    private static final String QRTZ_QUARTZ_JOB_TRIGGER = QuartzJobDefinition.QRTZ_QUARTZ_JOB + "_Trigger";
 
-    SimpleScheduleBuilder scheduleBuilder =
-        SimpleScheduleBuilder.simpleSchedule().withIntervalInMinutes(1).repeatForever();
+    /**
+     * Obtiene el desencadenador.
+     *
+     * @return Desencadenador.
+     */
+    @Override
+    public Trigger getTrigger() {
+        SimpleScheduleBuilder scheduleBuilder =
+                SimpleScheduleBuilder.simpleSchedule().withIntervalInMinutes(1).repeatForever();
 
-    return TriggerBuilder.newTrigger().forJob("Qrtz_TestJob").withIdentity("Qrtz_TestJob_Trigger")
-        .withSchedule(scheduleBuilder).build();
-  }
-
+        return TriggerBuilder.newTrigger().forJob(QuartzJobDefinition.QRTZ_QUARTZ_JOB).withIdentity(QRTZ_QUARTZ_JOB_TRIGGER)
+                .withSchedule(scheduleBuilder).build();
+    }
 }
 ```
 
