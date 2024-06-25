@@ -1,4 +1,4 @@
-# es.cimacg.Quartz
+# Spring Boot + Quartz + Oracle
 
 ## Objetivo
 
